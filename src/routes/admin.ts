@@ -170,7 +170,7 @@ router.get('/courses/:adminEmail', async (req, res) => {
 
 
   
-router.get('/courses/:courseId', async (req, res) => {
+router.get('/courses/:courseId/getone', async (req, res) => {
 
     const courseId = req.params.courseId; 
     const adminId = req.headers["adminId"] as string; 
@@ -180,7 +180,7 @@ router.get('/courses/:courseId', async (req, res) => {
         }
     }); 
 
-    res.json({ course, adminId: course?.adminId }); 
+    res.json({ course }); 
 
 });
 
