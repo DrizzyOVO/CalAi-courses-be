@@ -245,7 +245,7 @@ router.post("/courses/:courseId/buy", async (req, res) => {
         email: email, 
       }
     }); 
-    if(user && userId && typeof userId === "number"){ 
+    if(user){ 
       await prisma.course.update({ 
         where: {
           id: parseInt(courseId)
