@@ -2,41 +2,10 @@ import { PrismaClient } from '@prisma/client'
 import express from "express"; 
 import jwt from "jsonwebtoken"
 import { Secret } from 'jsonwebtoken'; 
-import { SECRET, authenticateJwt } from '../middleware/user'; 
 import { signupInput } from '../zodValidation';
 
 const prisma = new PrismaClient()
 const router = express.Router(); 
-
-
-router.get("/me", authenticateJwt, async (req, res) => {
-  const email = req.headers["email"] as string;
-  
-  if(!email){
-    res.json({ 
-      email: null, 
-      userId: null
-  })
-  return 
-  }
-  
-  const user = await prisma.user.findUnique({ 
-      where: {
-          email: email
-      }
-  }); 
-  if(!user) { 
-      res.json({ email: null, userId: null }); 
-      return; 
-  } else { 
-      res.json({ 
-          email: user.email, 
-          userId: user.id 
-      })
-  }
-}); 
-
-
 
 router.post('/signup', async (req, res) => {
   const parsedInput = signupInput.safeParse(req.body);  
@@ -63,13 +32,11 @@ router.post('/signup', async (req, res) => {
 
   if(user){ 
     if (user.password == password){
-      const token = jwt.sign({ email: email, userId: user.id, role: 'user' }, SECRET, {expiresIn: '1h'}); 
-      res.json({ message: 'User already exists', token, email, userId: user.id }); 
+      res.json({ message: 'User already exists', email, userId: user.id }); 
     } else {
       res.json({ message: "Incorrect password" }); 
     }
-      const token = jwt.sign({ email: email, userId: user.id, role: 'user' }, SECRET, {expiresIn: '1h'}); 
-      res.json({ message: 'User already exists', token, email, userId: user.id }); 
+      res.json({ message: 'User already exists', email, userId: user.id }); 
   } else { 
       const newUser = await prisma.user.create({ 
           data: {
@@ -78,8 +45,7 @@ router.post('/signup', async (req, res) => {
               name: "user " + email,
           }
       }); 
-      const token = jwt.sign({ email: newUser.email, userId: newUser.id, role: 'user' }, SECRET, {expiresIn: '1h'}); 
-      res.json({ message: 'Created user sucessfully', token, email, userId: newUser.id }); 
+      res.json({ message: 'Created user sucessfully', email, userId: newUser.id }); 
   }
 
 }); 
@@ -96,22 +62,10 @@ router.post("/login", async (req, res) => {
     }
   }); 
 
-  // if(user === null) {
-  //   res.json({ message: 'Invalid username or password' }); 
-  // } else { 
-  //   if(user.password == password){ 
-  //     const token = jwt.sign({ email: email, userId: user.id, role: 'user'}, SECRET, {expiresIn: '1h'}); 
-  //     res.json({ message: "Logged in successfully", token, email, userId }); 
-  //   } else { 
-  //     res.json({ message: "Incorrect password" })
-  //   }
-  // }
-
   if(user){ 
     if(user.password == password){ 
       console.log("User exists");
-      const token = jwt.sign({ email: email, userId: user.id, role: 'user'}, SECRET, {expiresIn: '1h'}); 
-      res.json({ message: "Logged in successfully", token, email, userId }); 
+      res.json({ message: "Logged in successfully", email, userId }); 
       return 
     } else { 
       console.log("wrong password"); 
@@ -150,14 +104,6 @@ router.get('/courses/:userEmail', async (req, res) => {
     }
   }); 
 
-  // const ans = courses.map((course) => {
-  //   course.users.map(user => {
-  //     if(user.email == email) { 
-
-  //     }
-  //   })
-  // })
-
   if(courses){ 
     res.json({ courses, user }); 
   }else{ 
@@ -170,11 +116,6 @@ router.get('/courses/:userEmail', async (req, res) => {
 router.get("/courses/:courseId/:userEmail", async (req, res) => {
   const courseId = req.params.courseId; 
   const userEmail = req.params.userEmail; 
-  // const email = req.headers["email"] as string; 
-  // const userId = req.headers["userId"]; 
-
-  // console.log("userId :- " + userId);
-  // console.log("email :- " + email);
 
   const course = await prisma.course.findUnique({ 
     where: {
@@ -221,11 +162,6 @@ router.get("/findid/:userEmail", async (req, res) => {
 
 router.post("/courses/:courseId/buy", async (req, res) => {
   
-  // console.log("headers existttttt");
-  // if(req.headers.authorization){
-  //   console.log("headers existttttt");
-  //   console.log(req.headers.authorization);
-  // }
 
   console.log("reached in backend");
   const courseId = req.params.courseId; 
@@ -314,12 +250,6 @@ router.get('/courses/:courseId/:userId', async (req, res) => {
 });
 
 router.get('/purchasedCourses/:userEmail', async (req, res) => {
-  // const user = await User.findOne({ username: req.user.username }).populate('purchasedCourses');
-  // if (user) {
-  //   res.json({ purchasedCourses: user.purchasedCourses || [] });
-  // } else {
-  //   res.status(403).json({ message: 'User not found' });
-  // }
 
   const email = req.params.userEmail; 
   const user = await prisma.user.findUnique({ 

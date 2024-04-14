@@ -2,31 +2,10 @@ import { PrismaClient } from '@prisma/client'
 import express from "express"; 
 import jwt from "jsonwebtoken"
 import { Secret } from 'jsonwebtoken'; 
-import { SECRET, adminAuthenticateJwt } from '../middleware/admin'; 
 import { signupInput } from '../zodValidation';
 
 const prisma = new PrismaClient()
 const router = express.Router(); 
-
-router.get("/me", adminAuthenticateJwt, async (req, res) => {
-    const id = req.headers["adminId"] as string;  
-    const email = req.headers["email"] as string; 
-    const role = req.headers["role"]; 
-    const admin = await prisma.admin.findUnique({ 
-        where: {
-            email: email
-        }
-    }); 
-    if(!admin) { 
-        res.status(403).json({ msg: "Admin doesn't exist" }); 
-        return; 
-    } else { 
-        res.json({ 
-            adminid: admin.id, 
-            email: admin.email, 
-        })
-    }
-}); 
 
 
 router.post("/signup", async (req, res) => { 
@@ -51,9 +30,8 @@ router.post("/signup", async (req, res) => {
         }); 
         if(admin){ 
             if(admin.password == password) { 
-                console.log("Admin exists");
-                const token = jwt.sign({ email: email, adminId: admin.id, role: 'Admin' }, SECRET, {expiresIn: '1h'}); 
-                res.json({ message: "Admin logged in", token, adminId: admin.id, email: admin.email });  
+                console.log("Admin exists") 
+                res.json({ message: "Admin logged in" });  
                 return;
             } else { 
                 res.json({ message: "Incorrect password" })  
@@ -71,20 +49,8 @@ router.post("/signup", async (req, res) => {
                 }); 
                 if(createAdmin){ 
                     console.log("Admin created");
-                    const token = jwt.sign({ email: email, adminId: createAdmin.id, role: 'Admin' }, SECRET, {expiresIn: '1h'}); 
-                    let adminId = null; 
-                    jwt.verify(token, SECRET, (err, payload) => {
-                        if(err || !payload || typeof payload == "string"){ 
-                            return res.sendStatus(403); 
-                        }
-                        adminId = payload.adminId; 
-                    }); 
-
-                    if(adminId){ 
-                        res.json({ message: "Admin created", token, email, adminId }); 
-                    } else { 
-                        res.json({ message: "try again later" }); 
-                    }
+                    
+                    res.json({ message: "Admin created", email }); 
 
                 } else { 
                     res.json({ message: "try again later" });  
@@ -109,8 +75,7 @@ router.post("/login", async (req, res) => {
 
     if(admin) { 
         if(admin.password == password) { 
-            const token = jwt.sign({ email: email, adminId: admin.id, role: 'Admin'}, SECRET, {expiresIn: '1h'});  
-            res.json({ message: "Logged in successfully", token, email, adminId }); 
+            res.json({ message: "Logged in successfully", email, adminId }); 
         } else { 
             res.json({ message: "Invalid username or password" }) 
         }
@@ -119,24 +84,6 @@ router.post("/login", async (req, res) => {
     }
 
 })
-
-
-router.get("/findid/:adminEmail", async (req, res) => { 
-
-    const email = req.params.adminEmail;  
-    const admin = await prisma.admin.findUnique({ 
-      where: { 
-        email: email
-      }
-    }); 
-  
-    if(admin){ 
-      res.json({ message: "success", admin }); 
-    } else { 
-      res.json({ message: "filed" })  
-    }
-  
-  })
 
 
 
@@ -174,7 +121,7 @@ router.post('/createCourse', async (req, res) => {
 
 router.put('/courses/:courseId', async (req, res) => {
     const courseId = req.params.courseId as string; 
-    const { title, description, price, published, imgLink, email } = req.body; 
+    const { title, description, price, published, imgLink } = req.body; 
     const course = await prisma.course.update({ 
         where: {
             id: parseInt(courseId)
@@ -217,13 +164,13 @@ router.get('/courses/:adminEmail', async (req, res) => {
         }
     })
 
-    res.json({ courses, adminId: admin?.id, email });  
+    res.json({ courses, adminId: admin?.id, email }); 
 
 });
 
 
   
-router.get('/courses/:courseId/getone', async (req, res) => {
+router.get('/courses/:courseId', async (req, res) => {
 
     const courseId = req.params.courseId; 
     const adminId = req.headers["adminId"] as string; 
